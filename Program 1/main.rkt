@@ -17,13 +17,12 @@
   (+ (* 35/20 (avg quizzes)) (* 65/100 (avg exams))))
 
 (define (get-letter-grade grade)
-(define (get-letter-grade grade)
   (cond [(>= grade 93) "A"] ; special conditions since there are no A+s, or F±s
         [(< grade 60) "F"]
         [else (let*-values ([(tens ones) (quotient/remainder (floor grade) 10)]
                             [(letter-pos) (- tens 6)])
                 (string-append (substring "DCBA" letter-pos (add1 letter-pos))
-                               (if (< ones 3) "-" "") (if (<= 7 ones) "+" "")))]))
+                               (cond [(< ones 3) "-"] [(<= 7 ones) "+"] [else ""])))]))
 
 (define (parse-line line)
   (let*-values ([(split-line) (string-split line)]
