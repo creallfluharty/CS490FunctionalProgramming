@@ -37,4 +37,3 @@
       [unlabelled (list (get-profile "mystery1") (get-profile "mystery2"))])
   (for ([mystery (in-list unlabelled)])
     (printf "'~a' was most likely written by '~a'.~n" (profile-name mystery) (profile-name (get-closest-match mystery labelled)))))
-
