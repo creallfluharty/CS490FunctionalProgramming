@@ -17,13 +17,18 @@
   (success (cons item stack)))
 
 (define (stack-show stack)
-  (printf "[~a]~n" (string-join (map number->string stack)))
-  (success stack))
+  (success (format "[~a]" (string-join (map number->string stack)))))
+
+(define (stack-display-result f stack)
+  (do [result <- (f stack)]
+    (begin
+      (displayln result)
+      (success stack))))
 
 (define (stack-op op stack)
   (do [(list b r1) <- (stack-pop stack)]
-      [(list a r2) <- (stack-pop r1)]
-      [result <- (op a b)]
+    [(list a r2) <- (stack-pop r1)]
+    [result <- (op a b)]
     (stack-push result r2)))
 
 (define (stack-clear stack)
@@ -44,22 +49,22 @@
 
 (define (command-handler command stack)
   (do [f <- (case command
-                [("ADD") (success (curry stack-op (compose success +)))]
-                [("SUB") (success (curry stack-op (compose success -)))]
-                [("MUL") (success (curry stack-op (compose success *)))]
-                [("DIV") (success (curry stack-op safe-div))]
-                [("CLR") (success stack-clear)]
-                [("SHOW") (success stack-show)]
-                [("TOP") (success stack-top)]
-                [("SIZ") (success (compose success length))]
-                [("DUP") (success stack-duplicate-top)]
-                [("END") (failure "normal exit")] ; TODO handle this better
-                [else (let ([num (string->number command)])
-                        (if num
-                            (success (curry stack-push num))
-                            (failure (format "Unrecognized command '~a'!" command))))])]
-        [new-stack <- (f stack)]
-      (success new-stack)))
+              [("ADD") (success (curry stack-op (compose success +)))]
+              [("SUB") (success (curry stack-op (compose success -)))]
+              [("MUL") (success (curry stack-op (compose success *)))]
+              [("DIV") (success (curry stack-op safe-div))]
+              [("CLR") (success stack-clear)]
+              [("SHOW") (success (curry stack-display-result stack-show))]
+              [("TOP") (success (curry stack-display-result stack-top))]
+              [("SIZ") (success (curry stack-display-result (compose success length)))]
+              [("DUP") (success stack-duplicate-top)]
+              [("END") (failure "normal exit")] ; TODO handle this better
+              [else (let ([num (string->number command)])
+                      (if num
+                          (success (curry stack-push num))
+                          (failure (format "Unrecognized command '~a'!" command))))])]
+    [new-stack <- (f stack)]
+    (success new-stack)))
 
 (define (commands-handler commands stack)
   (if (empty? commands)
