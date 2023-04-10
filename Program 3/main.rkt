@@ -2,6 +2,8 @@
 
 (require data/either)
 (require data/monad)
+(require "app-state.rkt")
+
 
 (define (stack-top stack)
   (if (not (empty? stack))
@@ -14,29 +16,20 @@
       (failure "Can't pop from an empty stack!")))
 
 (define (stack-push item stack)
-  (success (cons item stack)))
+  (cons item stack))
 
 (define (stack-show stack)
-  (success (format "[~a]" (string-join (map number->string stack)))))
-
-(define (stack-display-result f stack)
-  (do [result <- (f stack)]
-    (begin
-      (displayln result)
-      (success stack))))
+  (format "[~a]" (string-join (map number->string stack))))
 
 (define (stack-op op stack)
   (do [(list b r1) <- (stack-pop stack)]
     [(list a r2) <- (stack-pop r1)]
     [result <- (op a b)]
-    (stack-push result r2)))
-
-(define (stack-clear stack)
-  (success '()))
+    (success (stack-push result r2))))
 
 (define (stack-duplicate-top stack)
   (do [top <- (stack-top stack)]
-    (stack-push top stack)))
+    (success (stack-push top stack))))
 
 (define (safe-div a b)
   (if (equal? b 0)
@@ -49,19 +42,19 @@
 
 (define (command-handler command stack)
   (case command
-    [("ADD") (stack-op (compose success +) stack)]
-    [("SUB") (stack-op (compose success -) stack)]
-    [("MUL") (stack-op (compose success *) stack)]
-    [("DIV") (stack-op safe-div stack)]
-    [("CLR") (stack-clear stack)]
-    [("SHOW") (stack-display-result stack-show stack)]
-    [("TOP") (stack-display-result stack-top stack)]
-    [("SIZ") (stack-display-result (compose success length) stack)]
-    [("DUP") (stack-duplicate-top stack)]
-    [("END") (failure "normal exit")] ; TODO handle this better
+    [("ADD") (chain app-continue (stack-op (compose success +) stack))]
+    [("SUB") (chain app-continue (stack-op (compose success -) stack))]
+    [("MUL") (chain app-continue (stack-op (compose success *) stack))]
+    [("DIV") (chain app-continue (stack-op safe-div stack))]
+    [("CLR") (app-continue '())]
+    [("SHOW") (app-continue stack (stack-show stack))]
+    [("TOP") (do [top <- (stack-top stack)] (app-continue stack top))]
+    [("SIZ") (app-continue stack (length stack))]
+    [("DUP") (chain app-continue (stack-duplicate-top stack))]
+    [("END") (app-exit stack)]
     [else (let ([num (string->number command)])
             (if num
-                (stack-push num stack)
+                (app-continue (stack-push num stack))
                 (failure (format "Unrecognized command '~a'!" command))))]))
 
 (define (commands-handler commands stack)
@@ -76,4 +69,5 @@
     [result <- (commands-handler commands stack)]
     (calculator-loop result)))
 
-(calculator-loop '())
+(let ([exit-state (calculator-loop '())])
+  (printf "Exiting normally. The stack was ~a" (stack-show (app-state-stack exit-state))))
