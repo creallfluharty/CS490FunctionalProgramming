@@ -69,5 +69,7 @@
     [result <- (commands-handler commands stack)]
     (calculator-loop result)))
 
-(let ([exit-state (calculator-loop '())])
-  (printf "Exiting normally. The stack was ~a" (stack-show (app-state-stack exit-state))))
+(let ([exit-status (calculator-loop '())])
+  (if (app-exit? exit-status)
+      (printf "Exiting normally. The stack was ~a" (stack-show (app-state-stack exit-status)))
+      (printf "Abort! Error: ~a" (from-either exit-status))))

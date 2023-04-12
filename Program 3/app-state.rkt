@@ -17,7 +17,18 @@
 (define (app-exit stack [output nothing])
   (app-state 'exit (if (nothing? output) output (just output)) stack))
 
+(define (app-exit? m)
+  (and (app-state? m) (equal? (app-state-tag m) 'exit)))
+
 (define (app-continue stack [output nothing])
   (app-state 'continue (if (nothing? output) output (just output)) stack))
 
-(provide app-exit app-continue app-state-stack app-state-stack)
+(define (app-continue? m)
+  (and (app-state? m) (equal? (app-state-tag m) 'continue)))
+
+(provide
+ app-exit
+ app-exit?
+ app-continue
+ app-continue?
+ app-state-stack)
